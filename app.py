@@ -57,20 +57,35 @@ def index():
 @app.route("/get", methods=["GET", "POST"])
 def chat():
     msg = request.form["msg"]
-    input = msg
-    print(input)
+    print("User Input:", msg)
 
+    # Try RAG response first
     response = rag_chain.invoke({"input": msg})
-    answer = response.get("answer", "")
+
+    # Extract string content from AIMessage or dict
+    if isinstance(response, dict) and "answer" in response:
+        answer = response["answer"]
+    elif hasattr(response, "content"):  # if it's an AIMessage
+        answer = response.content
+    else:
+        answer = str(response)
 
     print("RAG Response:", answer)
 
-    if "I am sorry," in answer or not answer.strip():
+    # Fallback if RAG fails or gives insufficient response
+    if "I don't" in answer or "I am sorry" in answer or not answer.strip():
         print("Using Google search as fallback...")
-        answer = search_google(msg)
+        fallback = search_google(msg)
+
+        if hasattr(fallback, "content"):
+            answer = fallback.content
+        else:
+            answer = str(fallback)
+
         print("Google Search Response:", answer)
 
-    return str(answer)
+    return answer  # Must return a string here!
+
 
 
 
