@@ -8,7 +8,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from dotenv import load_dotenv
 from src.prompt import *
 import os
-
+from src.search import search_google
 app = Flask(__name__)
 
 load_dotenv()
@@ -59,10 +59,18 @@ def chat():
     msg = request.form["msg"]
     input = msg
     print(input)
-    response = rag_chain.invoke({"input": msg})
-    print("Response : ", response["answer"])
-    return str(response["answer"])
 
+    response = rag_chain.invoke({"input": msg})
+    answer = response.get("answer", "")
+
+    print("RAG Response:", answer)
+
+    if "I am sorry," in answer or not answer.strip():
+        print("Using Google search as fallback...")
+        answer = search_google(msg)
+        print("Google Search Response:", answer)
+
+    return str(answer)
 
 
 
